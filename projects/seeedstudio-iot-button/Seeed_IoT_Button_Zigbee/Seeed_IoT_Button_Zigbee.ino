@@ -127,10 +127,24 @@ public:
   }
 };
 
+class InitialStateZigbeeBinary : public ZigbeeBinary
+{
+public:
+  explicit InitialStateZigbeeBinary(uint8_t endpoint) : ZigbeeBinary(endpoint) {}
+
+  bool setInitialBinaryInput(bool input)
+  {
+    esp_zb_attribute_list_t *binaryInputCluster =
+        esp_zb_cluster_list_get_cluster(_cluster_list, ESP_ZB_ZCL_CLUSTER_ID_BINARY_INPUT, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
+    return binaryInputCluster != nullptr &&
+           esp_zb_cluster_update_attr(binaryInputCluster, ESP_ZB_ZCL_ATTR_BINARY_INPUT_PRESENT_VALUE_ID, &input) == ESP_OK;
+  }
+};
+
 VersionedZigbeeBinary zbIoTButton(BUTTON_ENDPOINT);
-ZigbeeBinary zbSwitch1 = ZigbeeBinary(SWITCH1_ENDPOINT);
-ZigbeeBinary zbSwitch2 = ZigbeeBinary(SWITCH2_ENDPOINT);
-ZigbeeBinary zbSwitch3 = ZigbeeBinary(SWITCH3_ENDPOINT);
+InitialStateZigbeeBinary zbSwitch1(SWITCH1_ENDPOINT);
+InitialStateZigbeeBinary zbSwitch2(SWITCH2_ENDPOINT);
+InitialStateZigbeeBinary zbSwitch3(SWITCH3_ENDPOINT);
 bool buttonStatus = false;
 RTC_DATA_ATTR bool switch1Status = false;
 RTC_DATA_ATTR bool switch2Status = false;
@@ -723,6 +737,9 @@ void zigbeeSetupTask(void *pvParameters)
   zbSwitch3.addBinaryInput();
   zbSwitch3.setBinaryInputApplication(BINARY_INPUT_APPLICATION_TYPE_SECURITY_MOTION_DETECTION);
   zbSwitch3.setBinaryInputDescription("Switch3");
+  zbSwitch1.setInitialBinaryInput(switch1Status);
+  zbSwitch2.setInitialBinaryInput(switch2Status);
+  zbSwitch3.setInitialBinaryInput(switch3Status);
 
   // Set Zigbee device information
 #if defined(IOT_BUTTON_V1)
